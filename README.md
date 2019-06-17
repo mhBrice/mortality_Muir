@@ -78,8 +78,8 @@ Below are the R commands to install them all:
 
 ```R
 install.packages(
-  "survival", "survminer", "dplyr", "sf", "units", "gtools", "rms", "sjPlot",
-  "RColorBrewer", "colourlovers", "scales"
+  c("survival", "survminer", "dplyr", "sf", "units", "gtools", "rms", "sjPlot",
+  "RColorBrewer", "colourlovers", "scales", "remotes")
 )
 remotes::install_github("inSileco/graphicsutils")
 ```
@@ -95,7 +95,7 @@ source("scripts/2_coxph.R")
 
 All data used for the analyses can be found in the [data](https://github.com/mhBrice/mortality_Muir/tree/master/data) folder.
 
-Script #1, `scripts/1_dataFormatting.R`, prepares and formats the data for the analyses. The cleaned data are also included in the [data](https://github.com/mhBrice/thermophilization/tree/master/data) folder, hence the first script (`scripts/1_dataFormatting.R`) can be skipped.
+Script #1, `scripts/1_dataFormatting.R`, prepares and formats the data for the analyses. The cleaned data are also included in the [data](https://github.com/mhBrice/mortality_Muir/tree/master/data) folder, hence the first script (`scripts/1_dataFormatting.R`) can be skipped.
 
 Script #2, `scripts/2_coxph.R`, performed all the analyses and produced the figures.
 

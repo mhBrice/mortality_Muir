@@ -38,7 +38,7 @@ zone_muir <- st_read(dsn = 'data/zone_etude.shp')
 
 plot(st_geometry(xy))
 plot(st_geometry(zone_muir), add=T, border="blue")
-
+dev.off()
 
 ### SPATIAL MANIPULATION FOR COMPETITION INDEX ####
 
@@ -59,10 +59,14 @@ tree_inters$prop_inzone <- tree_inters$area_inzone/max(tree_inters$area_inzone)
 ### Compute competition index ####
 
 # Total tree density
+cat("Compute tree density within a 10m radius...")
 data_muir$Tree_density <- (st_is_within_distance(xy[,2], dist = 10, sparse = TRUE))
 data_muir$Tree_density <- unlist(lapply(data_muir$Tree_density, function(x) length(x)))
+cat("Done!\n")
 
 # Hegyi index sum(DBH_comp / (DBH_subj * Dist+1))
+
+cat("Compute Hegyi index within a 10m radius...")
 
 distarb <- st_distance(st_geometry(xy))
 distarb[which(distarb == set_units(0, m))] <- 0.1
@@ -121,6 +125,7 @@ for(id in xy$Tree_ID) {
   
 }
 
+cat("Done!\n")
 
 ### DATA CLEANING ####
 

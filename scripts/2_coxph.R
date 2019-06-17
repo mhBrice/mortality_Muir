@@ -11,6 +11,7 @@ library(RColorBrewer)
 library(colourlovers)
 library(scales)
 
+library(sf)
 library(graphicsutils)
 
 ### FUNCTIONS 
@@ -21,7 +22,7 @@ source('functions/mozaicplot.R')
 ### DATA ####
 
 surv_sp <- readRDS("data/surv_sp.RDS")
-data_muir2 <- readRDS("data/data_muir_clean.RDS")
+data_muir <- readRDS("data/data_muir_clean.RDS")
 
 species <- names(surv_sp)
 spnames <- c('Acer saccharum', 'Fagus grandifolia', 'Ostrya virginiana', 'Tilia americana', 'Tsuga canadensis')
@@ -79,6 +80,12 @@ dev.off()
 
 ### FIGURE 2. MORTALITY RATES & SURIVAL CURVES ####
 
+cut_y <- c(1996,1998,1999,2000, 2004, 2011, 2018) 
+
+surv_split <- survSplit(data = data_muir, 
+                        cut = cut_y, 
+                        end = "Year_death", start = 'time0', zero = 1987,
+                        event = "State")
 
 # Mean survival
 
@@ -86,45 +93,46 @@ col_surv <- swatch(clpalette('694737'))[[1]]
 
 y_step <- c("1987-1996", "1996-1998","1998-1999","1999-2000", 
             "2000-2004", "2004-2011", "2011-2018")
-fit <- surv_fit(Surv(Year_death, State) ~ Species,
-                data = data_muir)
+surv_curve <- surv_fit(Surv(Year_death, State) ~ Species,
+                       data = data_muir)
 
 pdf("results/fig2_mortality.pdf",
     height = 3.5, width = 7)
-# quartz(height = 3.5,width = 7)
-par(mfrow =c(1,2), mar=c(4.5,2.7,1,.7))
+# quartz(height = 3.5, width = 7)
+par(mfrow = c(1, 2), mar = c(4.5, 2.7, 1, .7))
 
 # MORTALITY RATES
-plot0(xlim=c(1995,2018), ylim=c(0,5))
-axis(2,las=1, cex.axis = .7)
-axis(1, at=cut_y, labels=F)
-text(cut_y, rep(-1.2,7), y_step, srt=90, xpd=NA, cex=.7)
+plot0(xlim = c(1995, 2018), ylim = c(0, 5))
+axis(2,las = 1, cex.axis = .7)
+axis(1, at = cut_y, labels = FALSE)
+text(cut_y, rep(-1.2, 7), y_step, srt = 90, xpd = NA, cex = .7)
 mtext("Mortality rate (%)", 2, cex = .9, line = 1.7)
 mtext("Time interval (years)", 1, cex = .9, line = 3.5)
-box2(1:2, lwd=1.5)
+box2(1:2, lwd = 1.5)
 for(sp in species) {
   
-  surv_tmp <- subset(SURV_sp, Species==sp)
+  surv_tmp <- subset(surv_split, Species==sp)
   
   surv_tab  <- table(surv_tmp$time0, surv_tmp$State)
   surv_tab[,1] <- surv_tab[,1] + surv_tab[,2]
+  m <- (1-((surv_tab[,1]-surv_tab[,2])/surv_tab[,1])^(1/diff(c(1987, cut_y))))*100
   
-  lines((1-((surv_tab[,1]-surv_tab[,2])/surv_tab[,1])^(1/diff(c(1987,cut_y))))*100~cut_y, 
+  lines(m ~ cut_y, 
         type = "b",
-        col = col_surv[which(species==sp)], lty=which(species==sp), 
+        col = col_surv[which(species == sp)], lty = which(species == sp), 
         lwd = 1.5, pch = 19, cex = .7)
   
 }
-abline(v=1998, col = alpha("grey35",.8))
-legend("topright", legend=spnames[c(3,2,1,4,5)], lty=c(3,2,1,4,5), lwd = 1.5, 
-       col = col_surv[c(3,2,1,4,5)], cex = .7, bty="n", xpd = NA, inset = c(0,-.05))
+abline(v = 1998, col = alpha("grey35", .8))
+legend("topright", legend = spnames[c(3,2,1,4,5)], lty = c(3,2,1,4,5), lwd = 1.5, 
+       col = col_surv[c(3,2,1,4,5)], cex = .7, bty = "n", xpd = NA, inset = c(0, -.05))
 mtext(letters[1], 3, adj = -.17, line = 0)
 
 # SURVIVAL CURVES
-plot(fit, xlim=c(1990,2020), ylim=c(.55,1), col = col_surv, 
-     lty=1:5, lwd = 1.5, las = 1, axes = F)
+plot(surv_curve, xlim = c(1990, 2020), ylim = c(.55, 1), col = col_surv, 
+     lty = 1:5, lwd = 1.5, las = 1, axes = FALSE)
 box2(1:2, lwd = 1.5)
-abline(v=1998, col = alpha("grey35",.8))
+abline(v = 1998, col = alpha("grey35", .8))
 axis(1, cex.axis = .7)
 axis(2, las = 1, cex.axis = .7)
 mtext("Survival probability", 2, cex = .9, line = 2)
@@ -136,22 +144,17 @@ dev.off()
 
 ### Get mortality rate by year ####
 
-cut_y <- c(1996,1998,1999,2000, 2004, 2011, 2018) 
 
-SURV_sp <- survSplit(data = data_muir, 
-                     cut = cut_y, 
-                     end = "Year_death", start = 'time0', zero = 1987,
-                     event = "State")
 
 # All species together
-surv_tab  <- table(SURV_sp$time0, SURV_sp$State)
+surv_tab  <- table(surv_split$time0, surv_split$State)
 surv_tab[,1] <- surv_tab[,1] + surv_tab[,2]
 (1-((surv_tab[,1] - surv_tab[,2])/surv_tab[,1])^(1/diff(c(1987,cut_y))))*100
 
 # By species
 x <- list()
 for(sp in species) {
-  surv_tmp <- subset(SURV_sp, Species==sp)
+  surv_tmp <- subset(surv_split, Species==sp)
   surv_tab  <- table(surv_tmp$time0, surv_tmp$State)
   (surv_tab[,1] <- surv_tab[,1] + surv_tab[,2])
   x[[sp]] <- (1-((surv_tab[,1] - surv_tab[,2])/surv_tab[,1])^(1/diff(c(1987,cut_y))))*100
@@ -160,13 +163,13 @@ x
 
 ### Get overall mortality rates ####
 
-SURV_sp <- survSplit(data = data_muir, 
+surv_split1 <- survSplit(data = data_muir, 
                      cut = 2018, 
                      end = "Year_death", start = 'time0', zero = 1987,
                      event = "State")
 
 # All species together
-surv_tab  <- table(SURV_sp$time0, SURV_sp$State)
+surv_tab  <- table(surv_split1$time0, surv_split1$State)
 surv_tab[,1] <- surv_tab[,1] + surv_tab[,2]
 (1-((surv_tab[,1] - surv_tab[,2])/surv_tab[,1])^(1/31))*100
 
@@ -174,7 +177,7 @@ surv_tab[,1] <- surv_tab[,1] + surv_tab[,2]
 # By species
 x <- list()
 for(sp in species) {
-  surv_tmp <- subset(SURV_sp, Species==sp)
+  surv_tmp <- subset(surv_split1, Species == sp)
   surv_tab  <- table(surv_tmp$time0, surv_tmp$State)
   (surv_tab[,1] <- surv_tab[,1] + surv_tab[,2])
   x[[sp]] <- (1-((surv_tab[,1] - surv_tab[,2])/surv_tab[,1])^(1/31))*100
@@ -195,7 +198,7 @@ var2scale <- c("Initial_DBH", "Hegyi_Acer", "Hegyi_Fagus", "Hegyi_Ostrya",
 cut_y <- c(1998, 1999, 2000, 2004, 2011, 2018, 2020) 
 
 for(sp in species) {
-  surv_tmp <- surv_sp2[[sp]]
+  surv_tmp <- surv_sp[[sp]]
   surv_tmp[,var2scale] <- scale(surv_tmp[,var2scale])
   surv_tmp <- subset(surv_tmp, Year_death >= 1998 & !is.na(Ice_storm))
   surv_tmp$Ice_storm <- droplevels(surv_tmp$Ice_storm)
@@ -254,6 +257,8 @@ cox.zph(ph_ovi)
 (ph_tam = coxph(form_cox, data = TAM))
 (cox.zph(ph_tam))
 (ph_tca = coxph(form_cox, data = TCA))
+# In the TCA model, beta of Ice_storm3 goes to infinity because no Tsuga that received this damage class died during the study period. 
+# Does not affect the result. Likelihood ratio test is still valid.
 cox.zph(ph_tca)
 
 # Check that Variance Inflation Factor (VIF) are below 10
@@ -332,7 +337,17 @@ dev.off()
 
 ### FIGURE 4. SURVIVAL CURVES FROM FITTED COX MODELS ####
 
-mymodel <- list(ph_asa, ph_fgr, ph_ovi, ph_tam, ph_tca)
+# Use unscale variable
+for(sp in species) {
+  surv_tmp <- surv_sp[[sp]]
+  surv_tmp <- subset(surv_tmp, Year_death >= 1998 & !is.na(Ice_storm))
+  surv_tmp$Ice_storm <- droplevels(surv_tmp$Ice_storm)
+  surv_tmp$surv_object <- Surv(time = surv_tmp$Year_death, event = surv_tmp$State)
+  
+  assign(paste0(sp, "_unsc"), surv_tmp)
+}
+
+dat_unsc <- list(ASA_unsc, FGR_unsc, OVI_unsc, TAM_unsc, TCA_unsc)
 
 # Graphical parameters
 col_surv <- rev(swatch(clpalette('4598774'))[[1]])[-1]
@@ -415,17 +430,6 @@ dev.off()
 
 #### FIGURE 5. BOXPLOT DAMAGE VS TREE SIZE #####
 
-# Use unscale variable
-for(sp in species) {
-  surv_tmp <- surv_sp[[sp]]
-  surv_tmp <- subset(surv_tmp, Year_death >= 1998 & !is.na(Ice_storm))
-  surv_tmp$Ice_storm <- droplevels(surv_tmp$Ice_storm)
-  surv_tmp$surv_object <- Surv(time = surv_tmp$Year_death, event = surv_tmp$State)
-  
-  assign(paste0(sp, "_unsc"), surv_tmp)
-}
-
-dat_unsc <- list(ASA_unsc, FGR_unsc, OVI_unsc, TAM_unsc, TCA_unsc)
 
 
 # Layout
