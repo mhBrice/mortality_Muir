@@ -1,5 +1,7 @@
 # Mortality analyses in an old-growth forest
 
+![DOI](https://zenodo.org/badge/191195897.svg)](https://zenodo.org/badge/latestdoi/191195897)
+
 This repository includes the data and R scripts to reproduce analyses and figures found in the article *Long-term impact of a major ice storm on tree mortality in an old-growth forest* by Deschênes, Brice and Brisson published in Forest Ecology and Management.
 
 
